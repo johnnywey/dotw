@@ -13,8 +13,8 @@
 #set -x
 
 thisDir=`pwd`
-twitterUsername="kitykity"
-timeZone="GMT-6:00"
+twitterUsername="johnnywey"
+timeZone="GMT-7:00"
 
 makePostFiles () {
     if ls -ld ${thisDir}/dotwPosts 2> /dev/null ; then
@@ -24,7 +24,7 @@ makePostFiles () {
     fi
     fileNum="0"
     echo "" > "${thisDir}/dotwPosts/post.0"
-      printf "Processing tweet.js file..."    
+      printf "Processing tweets.js file..."    
       # Each line in the monthly download file...
       while read thisLine ; do
       if echo ${thisLine} | grep "\"source\" :" > /dev/null ; then
@@ -36,7 +36,7 @@ makePostFiles () {
        else
         echo ${thisLine} >> ${thisDir}/dotwPosts/post.${fileNumPadded}
       fi
-  done < ${thisDir}/tweet.js
+  done < ${thisDir}/tweets.js
   printf "\n"
 }
 
@@ -75,7 +75,7 @@ postPopper () {
 ### I gave up fighting with this. 
 ### If someone wants to figure out the time conversion, be my guest to clean up my mess...
 #      postTitle="Twitter Post \@ ${postHour}\:${postMinute} ${postAMPM}"
-      postTitle="Twitter Post \@ ${postHour}\:${postMinute}" 
+      postTitle="Tweet \@ ${postHour}\:${postMinute}"
 #    fi
 
     postId=`cat ${fileName} | sed -n '/favorite_/,$p' | sed -n "/favorited\"/q;p" | grep "id\"" | tail -2 | head -1 | cut -d"\"" -f4`
@@ -84,35 +84,44 @@ postPopper () {
     postTextComplete="${postTitle}\n\n${postFullText}\n${postText}\n\n<${postUrl}>\n"
     postDateTimeForDayOne="${postMonth}/${postDay}/${postYear} ${postHour}:${postMinute}${postAMPM}"
     printf "\nFilename: ${fileName}\n"
+
+    # Get media. Default to media_url, but legacy Twitpic can exist in either expanded_url or post body.
+    # Order of prefernce is media, expanded, post body.
     postMediaUrl=`grep "media_url\"" ${fileName} | head -1 | cut -d"\"" -f4`
+    postExpandedUrl=`grep "expanded_url\"" ${fileName} | head -1 | cut -d"\"" -f4 | cut -d"/" -f4`
+    postInBody=`grep "\"full_text\"" ${fileName} | cut -d"\"" -f4 | sed 's/\"\,$//' | sed 's/http/\nhttp/g' | grep "http:\/\/twitpic.com/[a-zA-Z0-9.-]*" | cut -d"/" -f4`
+   
     if [ "${postMediaUrl}" != "" ] ; then
-      postMedia=`basename ${postMediaUrl}`
-      postMediaFilename=`find ${thisDir}/twitter/tweet_media -name "*${postMedia}" | egrep "jpg|png|gif"`
+        postMedia=`basename ${postMediaUrl}`
+        postMediaFilename=`find ${thisDir}/twitter/tweet_media -name "*${postMedia}" | egrep "jpg|png|gif"`
+    elif [ "${postExpandedUrl}" != "" ] ; then
+        ./download_twitpic.sh "$postExpandedUrl"
+        postMediaFilename=`find ${thisDir}/twitter/twitpic_media -name "*${postExpandedUrl}.jpg"`
+    elif [ "${postInBody}" != "" ] ; then
+        ./download_twitpic.sh "$postInBody"
+        postMediaFilename=`find ${thisDir}/twitter/twitpic_media -name "*${postInBody}.jpg"`
     fi
-    postTags=`grep "\"text\"" ${fileName} | cut -d":" -f2 | cut -d"\"" -f2 | sed 's/$/ /' | tr -d '\n' | sed 's/$/\ /'`
+    
     printf "Post Date: ${postDateTimeForDayOne}\n"
-    if [ "${postMedia}" != "" ] ; then
-      if [ "${postTags}" != "" ] ; then
-        printf "${postTextComplete}" | /usr/local/bin/dayone2 -t twitter ${postTags} -p ${postMediaFilename} -d="${postDateTimeForDayOne}" new 
-       else
-        printf "${postTextComplete}" | /usr/local/bin/dayone2 -p ${postMediaFilename} -t twitter -d="${postDateTimeForDayOne}" new 
-      fi
-     else
-      if [ "${postTags}" != "" ] ; then
-        printf "${postTextComplete}" | /usr/local/bin/dayone2 -t twitter ${postTags} -d="${postDateTimeForDayOne}" new
-       else
-        printf "${postTextComplete}" | /usr/local/bin/dayone2 -t twitter -d="${postDateTimeForDayOne}" new
-      fi
+    printf "Post Media File: ${postMediaFilename}\n"
+    printf "Twitpic in Body: ${postInBody}\n"
+    printf "Twitpic in expanded_url: ${postExpandedUrl}\n"
+
+    if [ "${postMediaFilename}" != "" ] ; then
+      printf "${postTextComplete}" | /usr/local/bin/dayone2 -p ${postMediaFilename} -t tweet -j Twitter -d="${postDateTimeForDayOne}" new 
+    else 
+      printf "${postTextComplete}" | /usr/local/bin/dayone2 -t tweet -j Twitter -d="${postDateTimeForDayOne}" new
     fi
     shortName=`echo ${fileName} | tr '/' '\n' | tail -1`
     mv ${fileName} ${thisDir}/dotwPosts/done.${shortName}
     printf "`ls ${thisDir}/dotwPosts/p* | wc -l` posts left to import.\n"
 #    sleep 5
-    printf "Hit Enter for the next one... " ; read m
+    # printf "Hit Enter for the next one... " ; read m
   done
 }
 
 ## MAIN ##
-#makePostFiles
-postPopper
+makePostFiles
+#postPopper
 ## END OF SCRIPT ##
+
