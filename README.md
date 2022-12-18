@@ -2,9 +2,9 @@
 
 I've been on Twitter for a long time. Perhaps, like many of you, I wanted to have a copy of my activity that is easily surfaced. What better tool than DayOne!
 
-The difference between the original script and this one is that I had a lot of my media stored in twitpic prior to Twitter supporting native media. I wanted to add those to DayOne also.
+The difference between the original script and this one is that I had a lot of my media stored in Twitpic prior to Twitter supporting native media. I wanted to add those to DayOne also.
 
-The script looks for Twitpic links in either the expanded_url section or the body. If they exist, it will download them to twitter/twitpic_media and then add them to DayOne. It (perhaps) niavely assumes the image is a jpg.
+The script looks for Twitpic links in either the `expanded_url` section or the body. If they exist, it will download them to `twitter/twitpic_media` and then add them to DayOne. It (perhaps) niavely assumes the image is a jpg.
 
 Outside of this, the biggest difference between this and the original is I expect the `tweets.js` file to exist in the same directly as the script - just to make things easier on me.
 
