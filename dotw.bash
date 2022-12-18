@@ -121,7 +121,7 @@ postPopper () {
 }
 
 ## MAIN ##
-makePostFiles
-#postPopper
+#makePostFiles
+postPopper
 ## END OF SCRIPT ##
 
